@@ -1,0 +1,6 @@
+# Ignore all logs file
+*.log
+
+# Ignore all xlxs and csv file
+*.csv
+*.xlxs
