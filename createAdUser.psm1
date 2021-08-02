@@ -1,100 +1,82 @@
-function Import-NamCsv {
-  param (
-    [Parameter(Mandatory = $true)][string]$Path    
-  )
-  
-}
-
 function Create-NamBulkAdUser {
-  <#
-  
-  #>
+
   [CmdletBinding()]
   param (
-    # Basic account information #
-    [string]$FirstName,
-    [string]$LastName,
-    [Parameter(Mandatory = $true)][string]$FullName,
-    [Parameter(Mandatory = $true)][string]$UPN,
-    [Parameter(Mandatory = $true)][string]$SamAccountName,
-    # OU path and security group will get from another script
-    [Parameter(Mandatory = $true)][string]$OU,
-    [string]$SecurityGroup,
-    
-    # Account's option
-    #[string]$EmploymentType,
-    #[string]$EndOfContract,
-    # Need more information on this one
+    # Path to csv file
+    [Parameter(Mandatory = $true,
+      ValueFromPipeline = $true,
+      ValueFromPipelineByPropertyName = $true,
+      HelpMessage = 'Enter path to Csv file')]
+    [Alias("FilePath", "P")]
+    [string]
+    $Path,
 
-    # Organization information #
-    [string]$DisplayName,
-    [string]$JobTitle,
-    [string]$Department,
-    [string]$Company,
-    [string]$Manager,
-
-    # Office's location information #
-    [string]$Address,
-    [string]$Location,
-    [string]$Region,
-    [string]$PostalCode,
-    [string]$Country
+    # Logging file location
+    [string]
+    $LogFile = ".\namModule.log"  
   )
 
-  # Check if ad user is exist yet using user principal name
-  $Password = "Welcome10"
-  $chkUsrExist = Get-ADUser -Identity $SamAccountName
-  if ($chkUsrExist -eq $null) {
-    # Create AD user with basic account information
-    $scrptBlkCreateAdUsr = { New-ADUser `
-        -Name "$LastName, $FirstName" `
-        -DisplayName $DisplayName `
-        -GivenName $FirstName `
-        -Surname $LastName `
-        -SamAccountName $SamAccountName `
-        -UserPrincipalName $UPN `
-        -Enabled $true `
-        -ChangePasswordAtLogon $true `
-        -Path $OU `
-        -AccountPassword (convertto-securestring $Password -AsPlainText -Force) }
-    # Start job and wait for it to finish
-    $jobCreateUsr = Start-Job -ScriptBlock $scrptBlkCreateAdUsr
-    $jobCreateUsr | Wait-Job | Out-Null
-    # Re-check if user creation suceed or not
-    $reCheck = 0
-    do {
-      $chkUsrExist = Get-ADUser -Identity $SamAccountName
-      if ($chkUsrExist -eq $null) {
-        Write-Information "User is not exist - retry checking after 2 seconds"
-        Start-Sleep -Seconds 2
+  Process {
+    # Check if path exist
+    if (Test-Path -Path $Path) {
+      # Check if file extension is .csv
+      if ([IO.Path]::GetExtension($Path) -eq ".csv") {
+        # Import Csv file
+        try {
+          Write-NamLog -Level "INFO" -logfile $LogFile -Message "Importing Csv: $Path"
+          $ImportCsv = Import-Csv -path $Path -ErrorAction Stop -ErrorVariable ErrLog
+          Write-NamLog -Level "INFO" -logfile $LogFile -Message "Imported Csv: $Path"
+        }
+        catch {
+          $ErrLog = ($Error[0]).Exception
+          Write-NamLog -Level "ERROR" -logfile $LogFile -Message $ErrLog
+          Break
+        }
       }
       else {
-        Write-Information "User $SamAccountName creation succeed"
+        Write-NamLog -Level "ERROR" -LogFile $LogFile -Message "Filetype: Is not .csv"
+        Break
       }
-      $reCheck += 1
-    } until ($chkUsrExist -ne $null -and $reCheck -eq 5)
-    
+    }
+    else {
+      Write-NamLog -Level "ERROR" -LogFile $LogFile -Message "$Path do not exist"
+      Break
+    }
+
+
   }
-  else {
-    Write-Information "User $SamAccountName is already exist"
-    Continue
-  }
-
-
-  # Create user
-  # Output to log file
-  # Check if user creation is success or not
-  # Update user information - maybe it will be non mandatory information
-  # Check if update is success or not
-  # Output result to CSV file
-
-  # Maybe just get rid of the log and csv file
-  # Instead using the verbose and then allow all that information to pipe into variable with multiple properties?
 }
 
-function Out-NamCsv {
-  param (
-    [Parameter(Mandatory = $true)][string]$Path
+Function Write-NamLog {
+  [CmdletBinding()]
+  Param(
+    [Parameter(Mandatory = $False)]
+    [ValidateSet("INFO", "WARN", "ERROR", "FATAL", "DEBUG")]
+    [String]
+    $Level = "INFO",
+
+    [Parameter(Mandatory = $True,
+      ValueFromPipeline = $True,
+      ValueFromPipelineByPropertyName = $True)]
+    [string]
+    $Message,
+
+    [Parameter(Mandatory = $False)]
+    [Alias("FilePath", "Path")]
+    [string]
+    $LogFile
   )
-  
+
+  $Stamp = (Get-Date).toString("yyyy/MM/dd HH:mm:ss")
+  $Line = [PSCustomObject]@{
+    TimeStamp = $Stamp
+    Level     = $Level
+    Message   = $Message
+  }
+  If ($LogFile) {
+    $Line | Export-Csv -Path $LogFile -Append -Force -NoTypeInformation
+  }
+  Else {
+    Write-Output $Line
+  }
 }
