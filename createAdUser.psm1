@@ -40,7 +40,7 @@ function Create-NamBulkAdUser {
     try {
       Write-NamLog -Level "INFO" -Function "Import-Csv" -LogFile $LogFile -Message "Importing $Path"
       $ImportCsv = Import-Csv -path $Path -ErrorAction Stop -ErrorVariable ErrLog
-      Write-NamLog -Level "INFO" -Function "Import-Csv" -LogFile $LogFile -Message "Importing $Path Succeed"
+      Write-NamLog -Level "INFO" -Function "Import-Csv" -LogFile $LogFile -Message "Importing $Path : Succeed"
     }
     catch {
       $ErrLog = ($Error[0]).Exception
@@ -64,7 +64,7 @@ function Create-NamBulkAdUser {
 
     # Create AD User
     foreach ($user in $ImportCsv) {
-      # Check if user exist yet
+      # Basic information to create AD user
       $SamAccountName = $user.SamAccountName
       $UserPrincipalName = $user.UPN
       $OuPath = $user.OuPath
@@ -73,6 +73,7 @@ function Create-NamBulkAdUser {
       $Name = "$($user.FirstName),$($user.LastName)"
       $DisplayName = "$($user.FirstName),$($user.LastName)"
 
+      # Check if user exist yet
       if ($null -ne (Get-ADUser -filter { UserPrincipalname -eq $UserPrincipalName })) {
         Write-NamLog -Level "ERROR" -Function "New-ADUser" -LogFile $LogFile -Message "User is already exist, stop creating user with UserPrincipalName $UserPrincipalName"
         Continue
@@ -90,7 +91,7 @@ function Create-NamBulkAdUser {
         Continue
       }
       else {
-        # Create AD user
+        # If not exist then create user with basic information
         try {
           Write-NamLog -Level "INFO" -Function "Create-ADUser" -LogFile $LogFile -Message "Creating user with UserPrincipalName $UserPrincipalname"
           New-ADUser `
@@ -112,10 +113,13 @@ function Create-NamBulkAdUser {
           Continue  
         }
       }
+      # Done AD user creation
+      # Set user department's info
     }
   }
 }
 
+# Write log function
 Function Write-NamLog {
   [CmdletBinding()]
   Param(
