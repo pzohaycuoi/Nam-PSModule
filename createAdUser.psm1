@@ -1,6 +1,6 @@
 function Create-NamBulkAdUser {
 
-  [CmdletBinding()]
+  [CmdletBinding(SupportsShouldProcess = $true)]
   param (
     # Path to csv file
     [Parameter(Mandatory = $true,
@@ -17,6 +17,7 @@ function Create-NamBulkAdUser {
   )
 
   Process {
+
     # Check if path exist
     if (Test-Path -Path $Path) {
       Write-NamLog -Level "INFO" -Function "Test-Path" -LogFile $LogFile -Message "$Path exist"
@@ -49,7 +50,7 @@ function Create-NamBulkAdUser {
 
     # Check header of csv file
     $CsvHeader = $ImportCsv[0].PsObject.Properties.Name
-    $RequiredHeader = @("accountSkuId", "productName")
+    $RequiredHeader = @("SamAccountName", "UPN", "OuPath", "FirstName", "LastName")
     foreach ($header in $Requiredheader) {
       if (-not($CsvHeader -contains $header)) {
         $Checker = $false
@@ -61,24 +62,54 @@ function Create-NamBulkAdUser {
     if ($Checker -eq $false) { break }
     Write-NamLog -Level "INFO" -Function "Check-CsvHeader" -LogFile $LogFile -Message "CSV's header contains all required header"
 
-    Break
     # Create AD User
     foreach ($user in $ImportCsv) {
       # Check if user exist yet
-      if (Get-ADUser -filter { SamAccountName -eq $user.SamAccountName }) {
-        Write-NamLog -Level "WARN" -LogFile $LogFile -Message "User is already exist, stop creating user with SamAccountName $($user.SamAccountName)"
+      $SamAccountName = $user.SamAccountName
+      $UserPrincipalName = $user.UPN
+      $OuPath = $user.OuPath
+      $GivenName = $user.FirstName
+      $SurName = $user.LastName
+      $Name = "$($user.FirstName),$($user.LastName)"
+      $DisplayName = "$($user.FirstName),$($user.LastName)"
+
+      if ($null -ne (Get-ADUser -filter { UserPrincipalname -eq $UserPrincipalName })) {
+        Write-NamLog -Level "ERROR" -Function "New-ADUser" -LogFile $LogFile -Message "User is already exist, stop creating user with UserPrincipalName $UserPrincipalName"
+        Continue
+      } 
+      elseif ($null -ne (Get-ADUser -filter { SamAccountName -eq $SamAccountName })) {
+        Write-NamLog -Level "ERROR" -Function "New-ADUser" -LogFile $LogFile -Message "User is already exist, stop creating user with SamAccountName $SamAccountName"
+        Continue
+      } 
+      elseif ($null -ne (Get-ADUser -filter { Name -eq $Name })) {
+        Write-NamLog -Level "ERROR" -Function "New-ADUser" -LogFile $LogFile -Message "User is already exist, stop creating user with Name $Name"
+        Continue
+      } 
+      elseif ($null -eq (Get-ADOrganizationalUnit -Filter { DistinguishedName -eq $OuPath })) {
+        Write-NamLog -Level "ERROR" -Function "New-ADUser" -LogFile $LogFile -Message "OUpath $OuPath is not exist, stop stop creating user $UserPrincipalName"
         Continue
       }
       else {
+        # Create AD user
         try {
+          Write-NamLog -Level "INFO" -Function "Create-ADUser" -LogFile $LogFile -Message "Creating user with UserPrincipalName $UserPrincipalname"
           New-ADUser `
-            -SamAccountName $user.SamAccountName `
-            -UserPrincipalName $user.UPN `
-            -
-
+            -SamAccountName $SamAccountName `
+            -UserPrincipalName $UserPrincipalName `
+            -Path $OuPath `
+            -GivenName $GivenName `
+            -Surname $SurName `
+            -Name $Name `
+            -DisplayName $DisplayName `
+            -ChangePasswordAtLogon $true `
+            -Enabled $true `
+            -AccountPassword (ConvertTo-SecureString "Welcome10" -AsPlainText -Force) `
+            -ErrorAction Stop
+          Write-NamLog -Level "INFO" -Function "Create-ADUser" -LogFile $LogFile -Message "Creating user with UserPrincipalName $UserPrincipalname : Succeed"
         }
         catch {
-          
+          Write-NamLog -Level "ERROR" -Function "Create-ADUser" -LogFile $LogFile -Message "Create user with UserPrincipalName $UserPrincipalname : Failed"
+          Continue  
         }
       }
     }
@@ -120,7 +151,7 @@ Function Write-NamLog {
   }
   $Line = "$($LogProperties.TimeStamp) - $($LogProperties.User) - [$($LogProperties.Function)] - [$($LogProperties.Level)] - $($LogProperties.Message)"
   If ($LogFile) {
-    $Line | Add-Content -Path $LogFile
+    $Line | Add-Content -Path $LogFile -Force
     Write-Verbose $Line
   }
   Else {
