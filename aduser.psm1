@@ -30,6 +30,6 @@ foreach ($User in $ADUsers) {
       -Department $Department `
       -Path $OU `
       -AccountPassword (convertto-securestring $Password -AsPlainText -Force)
-
+    
   }
 }
