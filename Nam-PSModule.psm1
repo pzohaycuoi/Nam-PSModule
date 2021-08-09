@@ -109,12 +109,15 @@ function Create-NamBulkAdUser {
           Write-NamLog -Level "INFO" -Function "Create-ADUser" -LogFile $LogFile -Message "Creating user with UserPrincipalName $UserPrincipalname : Succeed"
         }
         catch {
+          $ErrLog = $Error[0]
           Write-NamLog -Level "ERROR" -Function "Create-ADUser" -LogFile $LogFile -Message "Create user with UserPrincipalName $UserPrincipalname : Failed"
+          $ErrLog
           Continue  
         }
       }
       # Done AD user creation
       # Set user department's info
+      
     }
   }
 }
