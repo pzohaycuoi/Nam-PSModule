@@ -50,7 +50,23 @@ function Create-NamBulkAdUser {
 
     # Check header of csv file
     $CsvHeader = $ImportCsv[0].PsObject.Properties.Name
-    $RequiredHeader = @("SamAccountName", "UPN", "OuPath", "FirstName", "LastName")
+    $RequiredHeader = @(
+      "SamAccountName", 
+      "UPN", 
+      "OuPath", 
+      "FirstName", 
+      "LastName",
+      "Title",
+      "Department",
+      "Company",
+      "Manager",
+      "Location",
+      "Address",
+      "Region",
+      "PostalCode",
+      "Country"
+      )
+      
     foreach ($header in $Requiredheader) {
       if (-not($CsvHeader -contains $header)) {
         $Checker = $false
