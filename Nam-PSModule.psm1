@@ -65,8 +65,8 @@ function Create-NamBulkAdUser {
       "Region",
       "PostalCode",
       "Country"
-      )
-      
+    )
+
     foreach ($header in $Requiredheader) {
       if (-not($CsvHeader -contains $header)) {
         $Checker = $false
@@ -109,6 +109,7 @@ function Create-NamBulkAdUser {
       else {
         # If not exist then create user with basic information
         try {
+          $createState = $true
           Write-NamLog -Level "INFO" -Function "New-ADUser" -LogFile $LogFile -Message "Creating user with UserPrincipalName $UserPrincipalname"
           New-ADUser `
             -SamAccountName $SamAccountName `
@@ -121,75 +122,81 @@ function Create-NamBulkAdUser {
             -ChangePasswordAtLogon $true `
             -Enabled $true `
             -AccountPassword (ConvertTo-SecureString "Welcome10" -AsPlainText -Force) `
-            -ErrorAction SilentlyContinue -ErrorVariable ErrLog
-          $ErrLog
+            -ErrorAction Stop -ErrorVariable ErrLog
           Write-NamLog -Level "INFO" -Function "New-ADUser" -LogFile $LogFile -Message "Creating user with UserPrincipalName $UserPrincipalname : Succeed"
         }
         catch {
-          Write-NamLog -Level "ERROR" -Function "New-ADUser" -LogFile $LogFile -Message "FAILED - Create user $UserPrincipalname - $ErroLog"
+          Write-NamLog -Level "ERROR" -Function "New-ADUser" -LogFile $LogFile -Message "FAILED - Create user $UserPrincipalname"
+          $createState = $false
           Continue  
         }
-        # Done AD user creation
+        if ($true -eq $createState) {
+          # Done AD user creation
 
-        # Organization information to set for created user
-        $Title = $user.Title
-        $Department = $user.Department
-        $Company = $user.Company
-        $Manager = $user.Manager
-        $Office = $user.Location
-        $StreetAddress = $user.Address
-        $City = $user.Region
-        $PostalCode = $user.PostalCode
-        $Country = $user.Country
+          # Organization information to set for created user
+          $Title = $user.Title
+          $Department = $user.Department
+          $Company = $user.Company
+          $Manager = $user.Manager
+          $Office = $user.Location
+          $StreetAddress = $user.Address
+          $City = $user.Region
+          $PostalCode = $user.PostalCode
+          $Country = $user.Country
 
-        # Check if user exist yet
-        if ($null -eq (Get-ADUser -filter { UserPrincipalname -eq $UserPrincipalName })) {
-          Write-NamLog -Level "WARN" -Function "Get-ADUser" -LogFile $LogFile -Message "Can't find user with UserPrincipalname $UserPrincipalName"
-          Continue
-        }
-        elseif ($null -eq (Get-ADUser -filter { SamAccountName -eq $SamAccountName })) {
-          Write-NamLog -Level "WARN" -Function "Get-ADUser" -LogFile $LogFile -Message "Can't find user with SamAccountName $SamAccountName"
-          Continue
-        }
-        elseif ($null -eq (Get-ADUser -filter { Name -eq $Name })) {
-          Write-NamLog -Level "WARN" -Function "Get-ADUser" -LogFile $LogFile -Message "Can't find user with Name $Name"
-          Write-NamLog -Level "ERROR" -Function "Set-ADUser" -LogFile $LogFile -Message "Can't find user $UserPrincipalName to set organization info"
-          Continue
-        }
-        else {
-          Write-NamLog -Level "INFO" -Function "Get-ADUser" -LogFile $LogFile -Message "Found user $UserPrincipalName, Setting user's organization info"
-
-          # Check if manager exist
-          if ($null -eq (Get-ADUser -filter { SamAccountName -eq $Manager })) {
-            Write-NamLog -Level "ERROR" -Function "Get-ADUser" -LogFile $LogFile -Message "Can't find manager with SamAccountName $SamAccountName"
+          # Check if user exist yet
+          if ($null -eq (Get-ADUser -filter { UserPrincipalname -eq $UserPrincipalName })) {
+            Write-NamLog -Level "WARN" -Function "Get-ADUser" -LogFile $LogFile -Message "Can't find user with UserPrincipalname $UserPrincipalName"
+            Continue
+          }
+          elseif ($null -eq (Get-ADUser -filter { SamAccountName -eq $SamAccountName })) {
+            Write-NamLog -Level "WARN" -Function "Get-ADUser" -LogFile $LogFile -Message "Can't find user with SamAccountName $SamAccountName"
+            Continue
+          }
+          elseif ($null -eq (Get-ADUser -filter { Name -eq $Name })) {
+            Write-NamLog -Level "WARN" -Function "Get-ADUser" -LogFile $LogFile -Message "Can't find user with Name $Name"
+            Write-NamLog -Level "ERROR" -Function "Set-ADUser" -LogFile $LogFile -Message "Can't find user $UserPrincipalName to set organization info"
             Continue
           }
           else {
-            # Manager exist continue the script
-            Write-NamLog -Level "INFO" -Function "Get-ADUser" -LogFile $LogFile -Message "Found manager with SamAccountName $SamAccountName"
+            Write-NamLog -Level "INFO" -Function "Get-ADUser" -LogFile $LogFile -Message "Found user $UserPrincipalName, Setting user's organization info"
 
-            # Set user organization info
-            try {
-              Write-NamLog -Level "INFO" -Function "Set-ADUser" -LogFile $LogFile -Message "Setting organization information for user with UserPrincipalName $UserPrincipalname"
-              Set-ADUser `
-                -Identity $SamAccountName `
-                -Title $Title `
-                -Department $Department `
-                -Company $Company `
-                -Manager $Manager `
-                -Office $Office `
-                -StreetAddress $StreetAddress `
-                -City $City `
-                -PostalCode $PostalCode `
-                -Country $Country `
-                -ErrorAction Stop
-              Write-NamLog -Level "INFO" -Function "Set-ADUser" -LogFile $LogFile -Message "Set organization user with UserPrincipalName $UserPrincipalname : Succeed"
-            }
-            catch {
-              Write-NamLog -Level "ERROR" -Function "Set-ADUser" -LogFile $LogFile -Message "Set organization information for user with UserPrincipalName $UserPrincipalname : FAILED"
+            # Check if manager exist
+            if ($null -eq (Get-ADUser -filter { SamAccountName -eq $Manager })) {
+              Write-NamLog -Level "ERROR" -Function "Get-ADUser" -LogFile $LogFile -Message "Can't find manager with SamAccountName $SamAccountName"
               Continue
-            }  
+            }
+            else {
+              # Manager exist continue the script
+              Write-NamLog -Level "INFO" -Function "Get-ADUser" -LogFile $LogFile -Message "Found manager with SamAccountName $SamAccountName"
+
+              # Set user organization info
+              try {
+                Write-NamLog -Level "INFO" -Function "Set-ADUser" -LogFile $LogFile -Message "Setting organization information for user with UserPrincipalName $UserPrincipalname"
+                Set-ADUser `
+                  -Identity $SamAccountName `
+                  -Title $Title `
+                  -Department $Department `
+                  -Company $Company `
+                  -Manager $Manager `
+                  -Office $Office `
+                  -StreetAddress $StreetAddress `
+                  -City $City `
+                  -PostalCode $PostalCode `
+                  -Country $Country `
+                  -ErrorAction Stop
+                Write-NamLog -Level "INFO" -Function "Set-ADUser" -LogFile $LogFile -Message "Set organization user with UserPrincipalName $UserPrincipalname : Succeed"
+              }
+              catch {
+                Write-NamLog -Level "ERROR" -Function "Set-ADUser" -LogFile $LogFile -Message "Set organization information for user with UserPrincipalName $UserPrincipalname : FAILED"
+                Continue
+              }  
+            }
           }
+        }
+        else {
+          Write-NamLog -Level "ERROR" -Function "Set-ADUser" -LogFile $LogFile -Message "STOP modifying user $SamAccountName organization info"
+          Continue
         }
       }
     }
