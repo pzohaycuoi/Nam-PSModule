@@ -115,7 +115,7 @@ function Create-NamBulkAdUser {
         }
         # Done AD user creation
 
-        Organization information to set for created user
+        # Organization information to set for created user
         $Title = $user.Title
         $Department = $user.Department
         $Company = $user.Company
