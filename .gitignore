@@ -4,3 +4,7 @@
 # Ignore all xlxs and csv file
 *.csv
 *.xlsx
+
+# Ingore picture file
+*.png
+*.jpeg

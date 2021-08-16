@@ -91,15 +91,15 @@ function Create-NamBulkAdUser {
 
       # Check if user exist yet
       if ($null -ne (Get-ADUser -filter { UserPrincipalname -eq $UserPrincipalName })) {
-        Write-NamLog -Level "ERROR" -Function "Get-ADUser" -LogFile $LogFile -Message "User is already exist, stop creating user with UserPrincipalName $UserPrincipalName"
+        Write-NamLog -Level "ERROR" -Function "Get-ADUser" -LogFile $LogFile -Message "User $UserPrincipalName is already exist, stop creating user with UserPrincipalName $UserPrincipalName"
         Continue
       } 
       elseif ($null -ne (Get-ADUser -filter { SamAccountName -eq $SamAccountName })) {
-        Write-NamLog -Level "ERROR" -Function "Get-ADUser" -LogFile $LogFile -Message "User is already exist, stop creating user with SamAccountName $SamAccountName"
+        Write-NamLog -Level "ERROR" -Function "Get-ADUser" -LogFile $LogFile -Message "User $SamAccountName is already exist, stop creating user with SamAccountName $SamAccountName"
         Continue
       } 
       elseif ($null -ne (Get-ADUser -filter { Name -eq $Name })) {
-        Write-NamLog -Level "ERROR" -Function "Get-ADUser" -LogFile $LogFile -Message "User is already exist, stop creating user with Name $Name"
+        Write-NamLog -Level "ERROR" -Function "Get-ADUser" -LogFile $LogFile -Message "User $Name is already exist, stop creating user with Name $Name"
         Continue
       } 
       elseif ($null -eq (Get-ADOrganizationalUnit -Filter { DistinguishedName -eq $OuPath })) {
@@ -122,11 +122,11 @@ function Create-NamBulkAdUser {
             -ChangePasswordAtLogon $true `
             -Enabled $true `
             -AccountPassword (ConvertTo-SecureString "Welcome10" -AsPlainText -Force) `
-            -ErrorAction Stop -ErrorVariable ErrLog
+            -ErrorAction Stop
           Write-NamLog -Level "INFO" -Function "New-ADUser" -LogFile $LogFile -Message "Creating user with UserPrincipalName $UserPrincipalname : Succeed"
         }
         catch {
-          Write-NamLog -Level "ERROR" -Function "New-ADUser" -LogFile $LogFile -Message "FAILED - Create user $UserPrincipalname"
+          Write-NamLog -Level "ERROR" -Function "New-ADUser" -LogFile $LogFile -Message "FAILED - Create user $UserPrincipalname - $($_.Exception.Message)"
           $createState = $false
           Continue  
         }
@@ -168,7 +168,7 @@ function Create-NamBulkAdUser {
             }
             else {
               # Manager exist continue the script
-              Write-NamLog -Level "INFO" -Function "Get-ADUser" -LogFile $LogFile -Message "Found manager with SamAccountName $SamAccountName"
+              Write-NamLog -Level "INFO" -Function "Get-ADUser" -LogFile $LogFile -Message "Found manager with SamAccountName $Manager"
 
               # Set user organization info
               try {
@@ -188,14 +188,14 @@ function Create-NamBulkAdUser {
                 Write-NamLog -Level "INFO" -Function "Set-ADUser" -LogFile $LogFile -Message "Set organization user with UserPrincipalName $UserPrincipalname : Succeed"
               }
               catch {
-                Write-NamLog -Level "ERROR" -Function "Set-ADUser" -LogFile $LogFile -Message "Set organization information for user with UserPrincipalName $UserPrincipalname : FAILED"
+                Write-NamLog -Level "ERROR" -Function "Set-ADUser" -LogFile $LogFile -Message "FAILED : Set organization information for user with UserPrincipalName $UserPrincipalname - $($_.Exception.Message)"
                 Continue
               }  
             }
           }
         }
         else {
-          Write-NamLog -Level "ERROR" -Function "Set-ADUser" -LogFile $LogFile -Message "STOP modifying user $SamAccountName organization info"
+          Write-NamLog -Level "ERROR" -Function "Set-ADUser" -LogFile $LogFile -Message "STOP modifying organization info - because Create user $SamAccountName Failed "
           Continue
         }
       }
