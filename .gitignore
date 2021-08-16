@@ -5,6 +5,10 @@
 *.csv
 *.xlsx
 
-# Ingore picture file
+# Igore picture file
 *.png
 *.jpeg
+
+# Ignore rar and zip file
+*.rar
+*.zip

@@ -1,12 +1,74 @@
 function Create-NamBulkAdUser {
 
+  <#
+.SYNOPSIS
+
+Create multiple active directory user from csv file
+
+.DESCRIPTION
+
+The `Create-NamBulkAdUser` cmdlet gets information from csv file in a specified location, csv file needs to have all required headers.
+For each line in the csv file - it creates AD user with required attribute and set organization information for that user.
+
+The `LogFile` parameter let you log all the information of the script to a file in a specified location.
+If it doesn't have argument it will not log anything.
+
+.EXAMPLE
+
+PS C:\Users\MyAccount\Desktop> Create-NamBulkAdUser -Path .\test.csv
+
+.EXAMPLE
+
+PS C:\Users\MyAccount\Desktop> Create-NamBulkAdUser -Path .\test.csv -verbose
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Test-Path] - [INFO] - .\test.csv exist
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Check-Extension] - [INFO] - Filetype of .\test.csv is .csv
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Import-Csv] - [INFO] - Importing .\test.csv
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Import-Csv] - [INFO] - Importing .\test.csv : Succeed
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Check-CsvHeader] - [INFO] - CSV's header contains all required header
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Get-ADUser] - [ERROR] - User MyAccount@DOMAIN.com is already exist, stop creating user with UserPrincipalName MyAccount@DOMAIN.com
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [New-ADUser] - [INFO] - Creating user with UserPrincipalName testUser@DOMAIN.com
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [New-ADUser] - [INFO] - Creating user with UserPrincipalName testUser@DOMAIN.com : Succeed
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Get-ADUser] - [INFO] - Found user testUser@DOMAIN.com, Setting user's organization info
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Get-ADUser] - [INFO] - Found manager with SamAccountName MyAccount
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Set-ADUser] - [INFO] - Setting organization information for user with UserPrincipalName testUser@DOMAIN.com
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Set-ADUser] - [INFO] - Set organization user with UserPrincipalName testUser@DOMAIN.com : Succeed
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Get-ADUser] - [ERROR] - User Test,User is already exist, stop creating user with Name Test,User
+VERBOSE: 2021-08-16 06:42:55 - DOMAIN\MyAccount - [Get-ADUser] - [ERROR] - OUpath CN=NotExist,DC=DOMAIN,DC=com is not exist, stop stop creating user testUser6@DOMAIN.com
+
+.EXAMPLE
+
+PS C:\Users\MyAccount\Desktop> Create-NamBulkAdUser -Path .\test.csv -LogFile test.log
+
+.EXAMPLE
+
+PS C:\Users\MyAcccount\Desktop> Create-NamBulkAdUser -Path .\test.csv -LogFile testRun.log -Verbose
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Test-Path] - [INFO] - .\test.csv exist
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Check-Extension] - [INFO] - Filetype of .\test.csv is .csv
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Import-Csv] - [INFO] - Importing .\test.csv
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Import-Csv] - [INFO] - Importing .\test.csv : Succeed
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Check-CsvHeader] - [INFO] - CSV's header contains all required header
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Get-ADUser] - [ERROR] - User MyAccount@DOMAIN.com is already exist, stop creating user with UserPrincipalName MyAccount@DOMAIN.com
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [New-ADUser] - [INFO] - Creating user with UserPrincipalName testUser@DOMAIN.com
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [New-ADUser] - [INFO] - Creating user with UserPrincipalName testUser@DOMAIN.com : Succeed
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Get-ADUser] - [INFO] - Found user testUser@DOMAIN.com, Setting user's organization info
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Get-ADUser] - [INFO] - Found manager with SamAccountName MyAccount
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Set-ADUser] - [INFO] - Setting organization information for user with UserPrincipalName testUser@DOMAIN.com
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Set-ADUser] - [INFO] - Set organization user with UserPrincipalName testUser@DOMAIN.com : Succeed
+VERBOSE: 2021-08-16 06:42:54 - DOMAIN\MyAccount - [Get-ADUser] - [ERROR] - User Test,User is already exist, stop creating user with Name Test,User
+VERBOSE: 2021-08-16 06:42:55 - DOMAIN\MyAccount - [Get-ADUser] - [ERROR] - OUpath CN=NotExist,DC=DOMAIN,DC=com is not exist, stop stop creating user testUser6@DOMAIN.com
+
+.LINK
+
+https://github.com/pzohaycuoi/IntuneAutoPilot
+
+#>
+
   [CmdletBinding(SupportsShouldProcess = $true)]
   param (
     # Path to csv file
     [Parameter(Mandatory = $true,
       ValueFromPipeline = $true,
-      ValueFromPipelineByPropertyName = $true,
-      HelpMessage = 'Enter path to Csv file')]
+      ValueFromPipelineByPropertyName = $true)]
     [Alias("FilePath", "P")]
     [string]
     $Path,
@@ -86,8 +148,8 @@ function Create-NamBulkAdUser {
       $OuPath = $user.OuPath
       $GivenName = $user.FirstName
       $SurName = $user.LastName
-      $Name = "$($user.FirstName),$($user.LastName)"
-      $DisplayName = "$($user.FirstName),$($user.LastName)"
+      $Name = "$($user.FirstName), $($user.LastName)"
+      $DisplayName = "$($user.FirstName), $($user.LastName)"
 
       # Check if user exist yet
       if ($null -ne (Get-ADUser -filter { UserPrincipalname -eq $UserPrincipalName })) {
