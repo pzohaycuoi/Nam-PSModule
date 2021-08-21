@@ -295,7 +295,6 @@ Function Write-NamLog {
     [Alias("FilePath", "Path")]
     [string]
     $LogFile
-
   )
 
   $Stamp = (Get-Date).toString("yyyy-MM-dd HH:mm:ss")
