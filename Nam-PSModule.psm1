@@ -73,7 +73,7 @@ https://github.com/pzohaycuoi/IntuneAutoPilot
     [string]
     $Path,
 
-    # Logging file location
+    # Logging file Path, If 
     [string]
     $LogFile = $null
   )
@@ -268,7 +268,7 @@ https://github.com/pzohaycuoi/IntuneAutoPilot
 function Import-NamCsvAdCreateBulkAdUser {
   param (
   )
-  
+  # modulize things
 }
 
 
