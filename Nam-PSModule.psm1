@@ -270,6 +270,7 @@ function Import-NamCsvAdCreateBulkAdUser {
   )
   # modulize things
   # testing
+  # discord?
 }
 
 
