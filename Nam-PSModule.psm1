@@ -65,17 +65,32 @@ https://github.com/pzohaycuoi/IntuneAutoPilot
 
   [CmdletBinding(SupportsShouldProcess = $true)]
   param (
-    # Path to csv file
-    [Parameter(Mandatory = $true,
-      ValueFromPipeline = $true,
-      ValueFromPipelineByPropertyName = $true)]
+    <#
+      Path to file the csv file contains information to create AD user.
+      Can be relative path or absolute path.
+    #>
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [Alias("FilePath", "P")]
     [string]
     $Path,
 
-    # Logging file Path, If 
+    <# 
+      Logging file Path.
+      If arguement exist all logging will be output to the file.
+      If the file is not exist yet, a new file will be created.
+      Can be realtive or absolute path.
+    #>
     [string]
-    $LogFile = $null
+    $LogFile = $null,
+
+    <#
+      Output file path, contains all successfully created AD user.
+      If argument exist all successfully created AD user will be output to the file
+      If the file is not exsit yet, a new file will be created
+      Can be relative or absolute path.
+    #>
+    [string]
+    $OutputFile = $null
   )
 
   Process {
@@ -105,8 +120,7 @@ https://github.com/pzohaycuoi/IntuneAutoPilot
       Write-NamLog -Level "INFO" -Function "Import-Csv" -LogFile $LogFile -Message "Importing $Path : Succeed"
     }
     catch {
-      $ErrLog = ($Error[0]).Exception
-      Write-NamLog -Level "ERROR" -Function "Import-Csv" -LogFile $LogFile -Message $ErrLog
+      Write-NamLog -Level "ERROR" -Function "Import-Csv" -LogFile $LogFile -Message "FAILED: Import-csv - $($_.Exception.Message)"
       Break
     }
 
@@ -265,12 +279,18 @@ https://github.com/pzohaycuoi/IntuneAutoPilot
   }
 }
 
-function Import-NamCsvAdCreateBulkAdUser {
+function Export-NamCsvFile {
   param (
+    <#
+      Output file path.
+      If the file not exist yet, a new file will be created.
+      Can be relative or absolute path.
+    #>
+    [Parameter(Mandatory)]
+    [String]
+    $Path
   )
-  # modulize things
-  # testing
-  # discord?
+  
 }
 
 
@@ -278,22 +298,17 @@ function Import-NamCsvAdCreateBulkAdUser {
 Function Write-NamLog {
   [CmdletBinding()]
   Param(
-    [Parameter(Mandatory = $False)]
     [ValidateSet("INFO", "WARN", "ERROR")]
     [String]
     $Level = "INFO",
 
-    [Parameter(Mandatory = $False)]
     [string]
     $Function,
 
-    [Parameter(Mandatory = $True,
-      ValueFromPipeline = $True,
-      ValueFromPipelineByPropertyName = $True)]
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [string]
     $Message,
 
-    [Parameter(Mandatory = $False)]
     [Alias("FilePath", "Path")]
     [string]
     $LogFile
