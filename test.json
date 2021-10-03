@@ -1,0 +1,10 @@
+[
+  {
+    "firstname":  "Nam",
+    "lastname":   "Nguyen",
+    "title":      "IT",
+    "department": "IT",
+    "manager":    "Thanh",
+    "location":   "LUX"
+  }
+]
